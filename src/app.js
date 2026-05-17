@@ -14,14 +14,22 @@ const diagramPreview = document.querySelector("#diagramPreview");
 const resultPanel = document.querySelector("#resultPanel");
 const resultStatus = document.querySelector("#resultStatus");
 const toast = document.querySelector("#toast");
+const backToProject = document.querySelector("#backToProject");
+const backProjectLabel = document.querySelector("#backProjectLabel");
+const userToggle = document.querySelector("#userToggle");
+const userMenu = document.querySelector("#userMenu");
 
-const storageKey = "docula.frontend.diagrams.v1";
+const storageKey = "docula.frontend.diagrams.only.v1";
 const defaultGatewayUrl = window.DOCULA_GATEWAY_URL || "http://127.0.0.1:8000";
+
+const urlParams = new URLSearchParams(window.location.search);
+const projectId = urlParams.get("projectId") || urlParams.get("id") || "demo";
+const projectName = urlParams.get("projectName") || urlParams.get("name") || "Sistema E-commerce";
+backProjectLabel.textContent = "Voltar";
 
 const diagramTypes = {
   class: {
     title: "Diagrama UML",
-    label: "UML de Classes",
     theme: "blue",
     icon: "code-2",
     sampleCode: `public class Usuario {
@@ -34,34 +42,18 @@ const diagramTypes = {
   },
   architecture: {
     title: "Arquitetura de Sistema",
-    label: "Arquitetura de Sistema",
     theme: "purple",
     icon: "layers",
     sampleCode: `public class GatewayController {
     private ParserClient parserClient;
     private DiagramClient diagramClient;
-
-    public String gerarDiagrama(String codigo) { return ""; }
-}
-
-public class ParserClient {
-    public ParsedClass analisar(String codigo) { return null; }
-}
-
-public class DiagramClient {
-    public String gerarPlantUml(ParsedClass parsedClass) { return ""; }
 }`,
   },
   cloud: {
     title: "Infraestrutura Cloud",
-    label: "Infraestrutura Cloud",
     theme: "green",
     icon: "cloud",
-    sampleCode: `public class AzureStaticWebApp {
-    private String frontendUrl;
-}
-
-public class AzureAppService {
+    sampleCode: `public class AzureAppService {
     private String gatewayUrl;
     private String parserUrl;
     private String diagramUrl;
@@ -69,7 +61,6 @@ public class AzureAppService {
   },
   er: {
     title: "Diagrama ER",
-    label: "Diagrama ER",
     theme: "orange",
     icon: "database",
     sampleCode: `public class Usuario {
@@ -80,46 +71,25 @@ public class AzureAppService {
 public class Pedido {
     private Long id;
     private Usuario usuario;
-    private Double total;
-}
-
-public class Produto {
-    private Long id;
-    private String nome;
-    private Double preco;
 }`,
   },
   persona: {
     title: "Perfis de Usuario",
-    label: "Perfis de Usuario",
     theme: "pink",
     icon: "users",
     sampleCode: `public class TechLead {
-    private String objetivo;
     public void revisarArquitetura() { }
 }
 
-public class GerenteProjeto {
-    private String objetivo;
-    public void gerarRelatorio() { }
-}
-
 public class Desenvolvedor {
-    private String objetivo;
     public void consultarDocumentacao() { }
 }`,
   },
   process: {
     title: "Fluxo de Processo",
-    label: "Fluxo de Processo",
     theme: "teal",
     icon: "git-branch",
-    sampleCode: `public class SolicitacaoDiagrama {
-    private String codigoFonte;
-    private String tipo;
-}
-
-public class PipelineGeracao {
+    sampleCode: `public class PipelineGeracao {
     public void receberCodigo() { }
     public void chamarParser() { }
     public void chamarDiagramApi() { }
@@ -165,11 +135,25 @@ window.lucide?.createIcons();
 newDiagramButton.addEventListener("click", () => openModal("class"));
 closeModalButton.addEventListener("click", closeModal);
 cancelButton.addEventListener("click", closeModal);
+backToProject.addEventListener("click", () => {
+  if (window.history.length > 1) {
+    window.history.back();
+  }
+});
+
+userToggle?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  userMenu?.classList.toggle("show");
+});
+
+window.addEventListener("click", (event) => {
+  if (userMenu && userToggle && !userMenu.contains(event.target) && !userToggle.contains(event.target)) {
+    userMenu.classList.remove("show");
+  }
+});
 
 document.querySelectorAll(".type-card").forEach((card) => {
-  card.addEventListener("click", () => {
-    openModal(card.dataset.type || "class");
-  });
+  card.addEventListener("click", () => openModal(card.dataset.type || "class"));
 });
 
 modalBackdrop.addEventListener("click", (event) => {
@@ -213,26 +197,24 @@ function openModal(type) {
   plantumlResult.textContent = "";
   diagramPreview.innerHTML = "";
   modalBackdrop.hidden = false;
-  document.body.classList.add("modal-open");
+  document.body.style.overflow = "hidden";
   sourceCode.focus();
 }
 
 function openHistoryDiagram(diagram) {
-  const type = diagram.type || "class";
   const plantuml = diagram.plantuml || buildDemoPlantuml(diagram.title);
-
-  selectedDiagramType = type;
+  selectedDiagramType = diagram.type || "class";
   modalTitle.textContent = diagram.title;
   diagramForm.hidden = true;
   resultStatus.textContent = "salvo";
-  showGeneratedResult(plantuml, type, diagram.title);
+  showGeneratedResult(plantuml, selectedDiagramType, diagram.title);
   modalBackdrop.hidden = false;
-  document.body.classList.add("modal-open");
+  document.body.style.overflow = "hidden";
 }
 
 function closeModal() {
   modalBackdrop.hidden = true;
-  document.body.classList.remove("modal-open");
+  document.body.style.overflow = "";
 }
 
 async function generateDiagram() {
@@ -242,6 +224,8 @@ async function generateDiagram() {
     source_code: sourceCode.value,
     diagram_type: selectedDiagramType,
     type: selectedDiagramType,
+    project_id: projectId,
+    project_name: projectName,
   };
 
   setLoading(true);
@@ -249,9 +233,7 @@ async function generateDiagram() {
   try {
     const response = await fetch(`${gatewayUrl}/diagram/class`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
@@ -271,6 +253,7 @@ async function generateDiagram() {
       elements: countElements(plantuml, selectedDiagramType),
       createdAt: new Date().toISOString(),
       sourceCode: payload.source_code,
+      projectId,
     });
     renderGeneratedDiagrams();
     showToast("Diagrama gerado com sucesso.");
@@ -325,14 +308,15 @@ function saveGeneratedDiagram(diagram) {
 }
 
 function renderGeneratedDiagrams(history = getHistory()) {
-  diagramCount.textContent = String(history.length);
+  const filteredHistory = history.filter((diagram) => !diagram.projectId || diagram.projectId === projectId);
+  diagramCount.textContent = String(filteredHistory.length);
 
-  if (history.length === 0) {
+  if (filteredHistory.length === 0) {
     generatedGrid.innerHTML = '<div class="empty-state">Nenhum diagrama gerado ainda.</div>';
     return;
   }
 
-  generatedGrid.innerHTML = history
+  generatedGrid.innerHTML = filteredHistory
     .map((diagram) => {
       const config = diagramTypes[diagram.type] || diagramTypes.class;
       return `
@@ -372,52 +356,28 @@ function extractPlantuml(data) {
 }
 
 function renderDiagramPreview(plantuml, type, title) {
-  if (type === "architecture") {
-    return renderArchitecturePreview();
-  }
-  if (type === "cloud") {
-    return renderCloudPreview();
-  }
-  if (type === "er") {
-    return renderEntityPreview(plantuml);
-  }
-  if (type === "persona") {
-    return renderPersonaPreview();
-  }
-  if (type === "process") {
-    return renderProcessPreview();
-  }
+  if (type === "architecture") return renderArchitecturePreview();
+  if (type === "cloud") return renderCloudPreview();
+  if (type === "er") return renderEntityPreview(plantuml);
+  if (type === "persona") return renderPersonaPreview();
+  if (type === "process") return renderProcessPreview();
   return renderClassPreview(plantuml, title);
 }
 
 function renderClassPreview(plantuml, title) {
   const classes = parsePlantumlClasses(plantuml);
-
-  if (classes.length === 0) {
-    return `
-      <div class="uml-board">
-        <article class="uml-class">
-          <header>${escapeHtml(title || "Classe")}</header>
-          <ul><li>atributos detectados pelo parser</li></ul>
-          <ul><li>metodos detectados pelo parser</li></ul>
-        </article>
-      </div>
-    `;
-  }
+  const fallback = [{ name: title || "Classe", attributes: ["atributos detectados"], methods: ["metodos detectados"] }];
+  const items = classes.length ? classes : fallback;
 
   return `
     <div class="uml-board">
-      ${classes
+      ${items
         .map(
           (item) => `
             <article class="uml-class">
               <header>${escapeHtml(item.name)}</header>
-              <ul>
-                ${item.attributes.map((line) => `<li>${escapeHtml(line)}</li>`).join("") || "<li>sem atributos</li>"}
-              </ul>
-              <ul>
-                ${item.methods.map((line) => `<li>${escapeHtml(line)}</li>`).join("") || "<li>sem metodos</li>"}
-              </ul>
+              <ul>${item.attributes.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+              <ul>${item.methods.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
             </article>
           `,
         )
@@ -428,16 +388,16 @@ function renderClassPreview(plantuml, title) {
 
 function renderArchitecturePreview() {
   return `
-    <div class="flow-preview architecture-preview">
-      <div class="flow-node primary"><i data-lucide="monitor"></i><span>Frontend</span></div>
-      <div class="flow-arrow">-></div>
+    <div class="flow-preview">
+      <div class="flow-node"><i data-lucide="monitor"></i><span>Frontend</span></div>
+      <strong>-></strong>
       <div class="flow-node"><i data-lucide="route"></i><span>Gateway API</span></div>
       <div class="flow-branches">
         <div class="flow-node"><i data-lucide="scan-search"></i><span>Parser API</span></div>
         <div class="flow-node"><i data-lucide="workflow"></i><span>Diagram API</span></div>
       </div>
-      <div class="flow-arrow">-></div>
-      <div class="flow-node storage"><i data-lucide="database"></i><span>Banco</span></div>
+      <strong>-></strong>
+      <div class="flow-node"><i data-lucide="database"></i><span>Banco</span></div>
     </div>
   `;
 }
@@ -445,10 +405,10 @@ function renderArchitecturePreview() {
 function renderCloudPreview() {
   return `
     <div class="cloud-preview">
-      <article><i data-lucide="cloud"></i><strong>Azure Static Web Apps</strong><span>Frontend</span></article>
-      <article><i data-lucide="server"></i><strong>Azure App Service</strong><span>Gateway API</span></article>
-      <article><i data-lucide="server-cog"></i><strong>Azure App Service</strong><span>Parser API</span></article>
-      <article><i data-lucide="boxes"></i><strong>Azure App Service</strong><span>Diagram API</span></article>
+      <article><i data-lucide="cloud"></i><strong>Static Web App</strong><span>Frontend</span></article>
+      <article><i data-lucide="server"></i><strong>App Service</strong><span>Gateway</span></article>
+      <article><i data-lucide="server-cog"></i><strong>App Service</strong><span>Parser</span></article>
+      <article><i data-lucide="boxes"></i><strong>App Service</strong><span>Diagram</span></article>
       <article><i data-lucide="database"></i><strong>PostgreSQL</strong><span>Persistencia</span></article>
     </div>
   `;
@@ -497,30 +457,17 @@ function renderProcessPreview() {
   const steps = ["Codigo", "Gateway", "Parser", "Diagram API", "Historico"];
   return `
     <div class="process-preview">
-      ${steps
-        .map(
-          (step, index) => `
-            <div class="process-step">
-              <span>${index + 1}</span>
-              <strong>${step}</strong>
-            </div>
-          `,
-        )
-        .join('<div class="process-arrow">-></div>')}
+      ${steps.map((step) => `<div class="process-step"><strong>${step}</strong></div>`).join("<strong>-></strong>")}
     </div>
   `;
 }
 
 function parsePlantumlClasses(plantuml) {
-  if (!plantuml) {
-    return [];
-  }
-
+  if (!plantuml) return [];
   const blocks = [...plantuml.matchAll(/class\s+["']?([\w\s.-]+)["']?\s*\{([\s\S]*?)\}/g)];
 
   if (blocks.length === 0) {
-    const inlineClasses = [...plantuml.matchAll(/\bclass\s+["']?([\w\s.-]+)["']?/g)];
-    return inlineClasses.map((match) => ({
+    return [...plantuml.matchAll(/\bclass\s+["']?([\w\s.-]+)["']?/g)].map((match) => ({
       name: match[1].trim(),
       attributes: [],
       methods: [],
@@ -528,11 +475,7 @@ function parsePlantumlClasses(plantuml) {
   }
 
   return blocks.map((match) => {
-    const lines = match[2]
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-
+    const lines = match[2].split("\n").map((line) => line.trim()).filter(Boolean);
     return {
       name: match[1].trim(),
       attributes: lines.filter((line) => !line.includes("(")),
@@ -552,26 +495,10 @@ class Projeto {
 }
 
 function countElements(plantuml, type = "class") {
-  if (type === "architecture") {
-    return 5;
-  }
-  if (type === "cloud") {
-    return 5;
-  }
-  if (type === "persona") {
-    return 3;
-  }
-  if (type === "process") {
-    return 5;
-  }
-
-  if (!plantuml) {
-    return type === "er" ? 3 : 0;
-  }
-
-  const classCount = (plantuml.match(/\bclass\b/g) || []).length;
-  const relationCount = (plantuml.match(/--|<\|--|\*--|o--/g) || []).length;
-  return Math.max(classCount + relationCount, type === "er" ? 3 : 1);
+  if (["architecture", "cloud", "process"].includes(type)) return 5;
+  if (type === "persona" || type === "er") return 3;
+  if (!plantuml) return 0;
+  return Math.max((plantuml.match(/\bclass\b/g) || []).length, 1);
 }
 
 function formatDate(value) {
@@ -595,3 +522,4 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+

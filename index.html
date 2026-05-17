@@ -3,100 +3,110 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DocuIA - Módulo de Diagramas</title>
-    <link rel="stylesheet" href="./src/styles.css?v=0.1.2" />
+    <title>DocuIA - Modulo de Diagramas</title>
+    <link rel="stylesheet" href="./src/styles.css?v=0.4.0" />
     <script src="https://unpkg.com/lucide@latest"></script>
   </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar" aria-label="Navegação principal">
-        <header class="brand">
-          <strong>DocuIA</strong>
-          <span>Documentação Inteligente</span>
-        </header>
+  <body class="dashboard-body">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h2>DocuIA</h2>
+        <p>Documentacao Inteligente</p>
+      </div>
 
-        <nav class="nav-list">
-          <a class="nav-item" href="#">
-            <i data-lucide="layout-dashboard"></i>
-            <span>Dashboard</span>
-          </a>
-          <a class="nav-item" href="#">
+      <nav class="menu">
+        <a href="/dashboard" class="menu-link">
+          <img src="./static/pngs/dashboard.png" alt="Dashboard" />
+          <span>Dashboard</span>
+        </a>
+        <a href="/empresas" class="menu-link">
+          <img src="./static/pngs/business-and-trade.png" alt="Empresas" />
+          <span>Empresas</span>
+        </a>
+        <a href="/projetos" class="menu-link active">
+          <img src="./static/pngs/folder.png" alt="Projetos" />
+          <span>Projetos</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <button class="company-select" type="button">
+          <span>
             <i data-lucide="building-2"></i>
-            <span>Empresas</span>
-          </a>
-          <a class="nav-item" href="#">
-            <i data-lucide="folder-kanban"></i>
-            <span>Projetos</span>
-          </a>
-        </nav>
+            Empresa Demo
+          </span>
+          <i data-lucide="chevron-down"></i>
+        </button>
 
-        <footer class="sidebar-footer">
-          <button class="company-switch" type="button">
-            <i data-lucide="building-2"></i>
-            <span>Empresa Demo</span>
-            <i data-lucide="chevron-down"></i>
-          </button>
-          <button class="user-switch" type="button">
-            <span class="avatar">U</span>
-            <span>
-              <strong>Usuário</strong>
-              <small>seu@email.com</small>
-            </span>
-            <i data-lucide="chevron-down"></i>
-          </button>
-        </footer>
-      </aside>
-
-      <main class="content">
-        <header class="page-header">
-          <div>
-            <h1>Módulo de Diagramas</h1>
-            <p>Engenharia reversa visual automática com IA</p>
+        <div class="user-dropdown-area">
+          <div class="user-menu" id="userMenu">
+            <a href="/perfil">Meu Perfil</a>
+            <div class="menu-divider"></div>
+            <a href="/login" class="logout-link">Sair</a>
           </div>
-          <button id="newDiagramButton" class="primary-button" type="button">
+
+          <button class="user-box user-toggle" type="button" id="userToggle">
+            <span class="profile-mini-avatar">U</span>
+            <span class="user-info">
+              <strong>Usuario</strong>
+              <p>email@exemplo.com</p>
+            </span>
+            <span class="dropdown-arrow">&#8964;</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+      <section class="diagrams-content">
+        <header class="diagrams-header">
+          <div>
+            <button class="back-to-project" type="button" id="backToProject">
+              <i data-lucide="arrow-left"></i>
+              <span id="backProjectLabel">Voltar</span>
+            </button>
+            <h1>Modulo de Diagramas</h1>
+            <p>Engenharia reversa visual automatica com IA</p>
+          </div>
+          <button id="newDiagramButton" class="primary-action" type="button">
             <i data-lucide="plus"></i>
             Novo Diagrama
           </button>
         </header>
 
-        <section class="panel diagram-types" aria-labelledby="diagramTypesTitle">
+        <section class="diagram-panel">
           <div class="panel-heading">
             <i data-lucide="workflow"></i>
-            <h2 id="diagramTypesTitle">Tipos de Diagrama</h2>
+            <h2>Tipos de Diagrama</h2>
           </div>
 
           <div class="type-grid">
-            <button class="type-card" type="button" data-type="class" data-title="UML de Classes">
+            <button class="type-card" type="button" data-type="class">
               <span class="type-icon blue"><i data-lucide="code-2"></i></span>
               <strong>UML de Classes</strong>
               <small>Estrutura de classes</small>
             </button>
-
-            <button class="type-card" type="button" data-type="architecture" data-title="Arquitetura de Sistema">
+            <button class="type-card" type="button" data-type="architecture">
               <span class="type-icon purple"><i data-lucide="layers"></i></span>
               <strong>Arquitetura de Sistema</strong>
-              <small>Visão geral do sistema</small>
+              <small>Visao geral do sistema</small>
             </button>
-
-            <button class="type-card" type="button" data-type="cloud" data-title="Infraestrutura Cloud">
+            <button class="type-card" type="button" data-type="cloud">
               <span class="type-icon green"><i data-lucide="cloud"></i></span>
               <strong>Infraestrutura Cloud</strong>
               <small>AWS, Azure, GCP</small>
             </button>
-
-            <button class="type-card" type="button" data-type="er" data-title="Diagrama ER">
+            <button class="type-card" type="button" data-type="er">
               <span class="type-icon orange"><i data-lucide="database"></i></span>
               <strong>Diagrama ER</strong>
               <small>Modelo de dados</small>
             </button>
-
-            <button class="type-card" type="button" data-type="persona" data-title="Perfis de Usuário">
+            <button class="type-card" type="button" data-type="persona">
               <span class="type-icon pink"><i data-lucide="users"></i></span>
-              <strong>Perfis de Usuário</strong>
+              <strong>Perfis de Usuario</strong>
               <small>User personas</small>
             </button>
-
-            <button class="type-card" type="button" data-type="process" data-title="Fluxo de Processo">
+            <button class="type-card" type="button" data-type="process">
               <span class="type-icon teal"><i data-lucide="git-branch"></i></span>
               <strong>Fluxo de Processo</strong>
               <small>Workflow e BPM</small>
@@ -104,25 +114,26 @@
           </div>
         </section>
 
-        <section class="panel generated-panel" aria-labelledby="generatedTitle">
+        <section class="diagram-panel generated-panel">
           <div class="generated-heading">
             <div>
-              <h2 id="generatedTitle">Diagramas Gerados</h2>
+              <h2>Diagramas Gerados</h2>
               <p><span id="diagramCount">3</span> diagramas salvos neste navegador</p>
             </div>
-            <button id="clearHistoryButton" class="link-button" type="button">Limpar histórico</button>
+            <button id="clearHistoryButton" class="link-button" type="button">Limpar historico</button>
           </div>
-
           <div id="generatedGrid" class="generated-grid"></div>
         </section>
-      </main>
-    </div>
+      </section>
+    </main>
+
+    <button class="help-btn" type="button">?</button>
 
     <div id="modalBackdrop" class="modal-backdrop" hidden>
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <header class="modal-header">
           <div>
-            <p>Gateway API</p>
+            <p>Modulo 5</p>
             <h2 id="modalTitle">Novo Diagrama</h2>
           </div>
           <button id="closeModalButton" class="icon-button" type="button" aria-label="Fechar">
@@ -132,18 +143,16 @@
 
         <form id="diagramForm" class="diagram-form">
           <label>
-            Título
+            Titulo
             <input id="diagramTitle" name="title" value="Diagrama UML" required />
           </label>
-
           <label>
-            Código-fonte
+            Codigo-fonte
             <textarea id="sourceCode" name="source_code" required></textarea>
           </label>
-
           <div class="modal-actions">
             <button class="secondary-button" type="button" id="cancelButton">Cancelar</button>
-            <button class="primary-button" type="submit">
+            <button class="primary-action" type="submit">
               <i data-lucide="send"></i>
               Gerar Diagrama
             </button>
@@ -163,7 +172,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./src/config.js?v=0.1.2"></script>
-    <script src="./src/app.js?v=0.1.2"></script>
+    <script src="./src/config.js?v=0.4.0"></script>
+    <script src="./src/app.js?v=0.4.0"></script>
   </body>
 </html>
