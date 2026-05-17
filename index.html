@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DocuIA - Módulo de Diagramas</title>
-    <link rel="stylesheet" href="./src/styles.css?v=0.1.0" />
+    <link rel="stylesheet" href="./src/styles.css?v=0.1.1" />
     <script src="https://unpkg.com/lucide@latest"></script>
   </head>
   <body>
@@ -137,11 +137,6 @@
           </label>
 
           <label>
-            Gateway URL
-            <input id="gatewayUrl" name="gateway_url" required />
-          </label>
-
-          <label>
             Código-fonte
             <textarea id="sourceCode" name="source_code" required></textarea>
           </label>
@@ -157,9 +152,10 @@
 
         <div id="resultPanel" class="result-panel" hidden>
           <div class="result-header">
-            <strong>PlantUML recebido</strong>
+            <strong>Resultado gerado</strong>
             <span id="resultStatus">pronto</span>
           </div>
+          <div id="diagramPreview" class="diagram-preview"></div>
           <pre id="plantumlResult"></pre>
         </div>
       </section>
@@ -167,7 +163,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./src/config.js?v=0.1.0"></script>
-    <script src="./src/app.js?v=0.1.0"></script>
+    <script src="./src/config.js?v=0.1.1"></script>
+    <script src="./src/app.js?v=0.1.1"></script>
   </body>
 </html>

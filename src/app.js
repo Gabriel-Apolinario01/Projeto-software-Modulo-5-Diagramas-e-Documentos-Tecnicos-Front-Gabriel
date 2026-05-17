@@ -1,15 +1,16 @@
-const gatewayUrlInput = document.querySelector("#gatewayUrl");
 const newDiagramButton = document.querySelector("#newDiagramButton");
 const modalBackdrop = document.querySelector("#modalBackdrop");
 const closeModalButton = document.querySelector("#closeModalButton");
 const cancelButton = document.querySelector("#cancelButton");
 const diagramForm = document.querySelector("#diagramForm");
+const modalTitle = document.querySelector("#modalTitle");
 const diagramTitle = document.querySelector("#diagramTitle");
 const sourceCode = document.querySelector("#sourceCode");
 const generatedGrid = document.querySelector("#generatedGrid");
 const diagramCount = document.querySelector("#diagramCount");
 const clearHistoryButton = document.querySelector("#clearHistoryButton");
 const plantumlResult = document.querySelector("#plantumlResult");
+const diagramPreview = document.querySelector("#diagramPreview");
 const resultPanel = document.querySelector("#resultPanel");
 const resultStatus = document.querySelector("#resultStatus");
 const toast = document.querySelector("#toast");
@@ -31,6 +32,7 @@ const demoDiagrams = [
     type: "architecture",
     elements: 24,
     createdAt: "2026-05-16T18:21:00",
+    plantuml: buildDemoPlantuml("Arquitetura de Sistema"),
   },
   {
     id: "demo-cloud",
@@ -38,6 +40,7 @@ const demoDiagrams = [
     type: "cloud",
     elements: 15,
     createdAt: "2026-05-16T18:12:00",
+    plantuml: buildDemoPlantuml("Infraestrutura Cloud"),
   },
   {
     id: "demo-er",
@@ -45,10 +48,10 @@ const demoDiagrams = [
     type: "er",
     elements: 18,
     createdAt: "2026-05-16T17:58:00",
+    plantuml: buildDemoPlantuml("Diagrama ER"),
   },
 ];
 
-gatewayUrlInput.value = defaultGatewayUrl;
 sourceCode.value = sampleCode;
 seedDemoHistory();
 renderGeneratedDiagrams();
@@ -73,7 +76,19 @@ modalBackdrop.addEventListener("click", (event) => {
 clearHistoryButton.addEventListener("click", () => {
   localStorage.removeItem(storageKey);
   renderGeneratedDiagrams([]);
-  showToast("Histórico limpo.");
+  showToast("Historico limpo.");
+});
+
+generatedGrid.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-diagram-id]");
+  if (!card) {
+    return;
+  }
+
+  const diagram = getHistory().find((item) => item.id === card.dataset.diagramId);
+  if (diagram) {
+    openHistoryDiagram(diagram);
+  }
 });
 
 diagramForm.addEventListener("submit", async (event) => {
@@ -82,12 +97,25 @@ diagramForm.addEventListener("submit", async (event) => {
 });
 
 function openModal(title) {
+  modalTitle.textContent = "Novo Diagrama";
+  diagramForm.hidden = false;
   diagramTitle.value = title.includes("UML") ? "Diagrama UML" : title;
   resultPanel.hidden = true;
   plantumlResult.textContent = "";
+  diagramPreview.innerHTML = "";
   modalBackdrop.hidden = false;
   document.body.classList.add("modal-open");
   sourceCode.focus();
+}
+
+function openHistoryDiagram(diagram) {
+  const plantuml = diagram.plantuml || buildDemoPlantuml(diagram.title);
+  modalTitle.textContent = diagram.title;
+  diagramForm.hidden = true;
+  resultStatus.textContent = "salvo";
+  showGeneratedResult(plantuml);
+  modalBackdrop.hidden = false;
+  document.body.classList.add("modal-open");
 }
 
 function closeModal() {
@@ -96,7 +124,7 @@ function closeModal() {
 }
 
 async function generateDiagram() {
-  const gatewayUrl = gatewayUrlInput.value.replace(/\/$/, "");
+  const gatewayUrl = defaultGatewayUrl.replace(/\/$/, "");
   const payload = {
     title: diagramTitle.value,
     source_code: sourceCode.value,
@@ -118,9 +146,8 @@ async function generateDiagram() {
     }
 
     const data = await response.json();
-    const plantuml = data.plantuml || data.diagram || data.result || "";
-    plantumlResult.textContent = plantuml || JSON.stringify(data, null, 2);
-    resultPanel.hidden = false;
+    const plantuml = extractPlantuml(data);
+    showGeneratedResult(plantuml || JSON.stringify(data, null, 2));
     resultStatus.textContent = "pronto";
 
     saveGeneratedDiagram({
@@ -129,6 +156,7 @@ async function generateDiagram() {
       plantuml,
       elements: countElements(plantuml),
       createdAt: new Date().toISOString(),
+      sourceCode: payload.source_code,
     });
     renderGeneratedDiagrams();
     showToast("Diagrama gerado com sucesso.");
@@ -136,10 +164,17 @@ async function generateDiagram() {
     resultPanel.hidden = false;
     resultStatus.textContent = "erro";
     plantumlResult.textContent = error.message;
+    diagramPreview.innerHTML = '<div class="preview-empty">Nao foi possivel gerar o diagrama.</div>';
     showToast("Erro ao chamar o Gateway API.");
   } finally {
     setLoading(false);
   }
+}
+
+function showGeneratedResult(plantuml) {
+  plantumlResult.textContent = plantuml || "Nenhum PlantUML foi retornado.";
+  diagramPreview.innerHTML = renderDiagramPreview(plantuml);
+  resultPanel.hidden = false;
 }
 
 function setLoading(isLoading) {
@@ -186,18 +221,107 @@ function renderGeneratedDiagrams(history = getHistory()) {
     .map((diagram, index) => {
       const theme = ["blue", "green", "orange", "purple"][index % 4];
       return `
-        <article class="generated-card ${theme}">
+        <button class="generated-card ${theme}" type="button" data-diagram-id="${escapeHtml(diagram.id)}">
           <span class="element-badge">${escapeHtml(diagram.elements || 0)} elementos</span>
           <i class="generated-icon" data-lucide="workflow"></i>
           <div class="generated-info">
             <h3>${escapeHtml(diagram.title)}</h3>
             <p>${formatDate(diagram.createdAt)}</p>
           </div>
-        </article>
+        </button>
       `;
     })
     .join("");
   window.lucide?.createIcons();
+}
+
+function extractPlantuml(data) {
+  if (!data || typeof data !== "object") {
+    return "";
+  }
+
+  const candidates = [
+    data.plantuml,
+    data.uml,
+    data.diagram,
+    data.content,
+    data.result?.plantuml,
+    data.result?.uml,
+    data.result?.diagram,
+    data.data?.plantuml,
+    data.data?.uml,
+    data.data?.diagram,
+  ];
+
+  return candidates.find((value) => typeof value === "string" && value.trim()) || "";
+}
+
+function renderDiagramPreview(plantuml) {
+  const classes = parsePlantumlClasses(plantuml);
+
+  if (classes.length === 0) {
+    return '<div class="preview-empty">O PlantUML foi recebido, mas nao foi possivel montar a visualizacao.</div>';
+  }
+
+  return `
+    <div class="uml-board">
+      ${classes
+        .map(
+          (item) => `
+            <article class="uml-class">
+              <header>${escapeHtml(item.name)}</header>
+              <ul>
+                ${item.attributes.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
+              </ul>
+              <ul>
+                ${item.methods.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
+              </ul>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function parsePlantumlClasses(plantuml) {
+  if (!plantuml) {
+    return [];
+  }
+
+  const blocks = [...plantuml.matchAll(/class\s+["']?([\w\s.-]+)["']?\s*\{([\s\S]*?)\}/g)];
+
+  if (blocks.length === 0) {
+    const inlineClasses = [...plantuml.matchAll(/\bclass\s+["']?([\w\s.-]+)["']?/g)];
+    return inlineClasses.map((match) => ({
+      name: match[1].trim(),
+      attributes: [],
+      methods: [],
+    }));
+  }
+
+  return blocks.map((match) => {
+    const lines = match[2]
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    return {
+      name: match[1].trim(),
+      attributes: lines.filter((line) => !line.includes("(")),
+      methods: lines.filter((line) => line.includes("(")),
+    };
+  });
+}
+
+function buildDemoPlantuml(title) {
+  return `@startuml
+title ${title}
+class Projeto {
+  +nome : String
+  +gerarDiagrama() : void
+}
+@enduml`;
 }
 
 function countElements(plantuml) {
