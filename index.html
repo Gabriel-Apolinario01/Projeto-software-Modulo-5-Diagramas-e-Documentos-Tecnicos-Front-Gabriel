@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DocuIA - Módulo de Diagramas</title>
+    <link rel="stylesheet" href="./src/styles.css?v=0.1.0" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegação principal">
+        <header class="brand">
+          <strong>DocuIA</strong>
+          <span>Documentação Inteligente</span>
+        </header>
+
+        <nav class="nav-list">
+          <a class="nav-item" href="#">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+          </a>
+          <a class="nav-item" href="#">
+            <i data-lucide="building-2"></i>
+            <span>Empresas</span>
+          </a>
+          <a class="nav-item" href="#">
+            <i data-lucide="folder-kanban"></i>
+            <span>Projetos</span>
+          </a>
+        </nav>
+
+        <footer class="sidebar-footer">
+          <button class="company-switch" type="button">
+            <i data-lucide="building-2"></i>
+            <span>Empresa Demo</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+          <button class="user-switch" type="button">
+            <span class="avatar">U</span>
+            <span>
+              <strong>Usuário</strong>
+              <small>seu@email.com</small>
+            </span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </footer>
+      </aside>
+
+      <main class="content">
+        <header class="page-header">
+          <div>
+            <h1>Módulo de Diagramas</h1>
+            <p>Engenharia reversa visual automática com IA</p>
+          </div>
+          <button id="newDiagramButton" class="primary-button" type="button">
+            <i data-lucide="plus"></i>
+            Novo Diagrama
+          </button>
+        </header>
+
+        <section class="panel diagram-types" aria-labelledby="diagramTypesTitle">
+          <div class="panel-heading">
+            <i data-lucide="workflow"></i>
+            <h2 id="diagramTypesTitle">Tipos de Diagrama</h2>
+          </div>
+
+          <div class="type-grid">
+            <button class="type-card" type="button" data-type="class" data-title="UML de Classes">
+              <span class="type-icon blue"><i data-lucide="code-2"></i></span>
+              <strong>UML de Classes</strong>
+              <small>Estrutura de classes</small>
+            </button>
+
+            <button class="type-card" type="button" data-type="architecture" data-title="Arquitetura de Sistema">
+              <span class="type-icon purple"><i data-lucide="layers"></i></span>
+              <strong>Arquitetura de Sistema</strong>
+              <small>Visão geral do sistema</small>
+            </button>
+
+            <button class="type-card" type="button" data-type="cloud" data-title="Infraestrutura Cloud">
+              <span class="type-icon green"><i data-lucide="cloud"></i></span>
+              <strong>Infraestrutura Cloud</strong>
+              <small>AWS, Azure, GCP</small>
+            </button>
+
+            <button class="type-card" type="button" data-type="er" data-title="Diagrama ER">
+              <span class="type-icon orange"><i data-lucide="database"></i></span>
+              <strong>Diagrama ER</strong>
+              <small>Modelo de dados</small>
+            </button>
+
+            <button class="type-card" type="button" data-type="persona" data-title="Perfis de Usuário">
+              <span class="type-icon pink"><i data-lucide="users"></i></span>
+              <strong>Perfis de Usuário</strong>
+              <small>User personas</small>
+            </button>
+
+            <button class="type-card" type="button" data-type="process" data-title="Fluxo de Processo">
+              <span class="type-icon teal"><i data-lucide="git-branch"></i></span>
+              <strong>Fluxo de Processo</strong>
+              <small>Workflow e BPM</small>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel generated-panel" aria-labelledby="generatedTitle">
+          <div class="generated-heading">
+            <div>
+              <h2 id="generatedTitle">Diagramas Gerados</h2>
+              <p><span id="diagramCount">3</span> diagramas salvos neste navegador</p>
+            </div>
+            <button id="clearHistoryButton" class="link-button" type="button">Limpar histórico</button>
+          </div>
+
+          <div id="generatedGrid" class="generated-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <div id="modalBackdrop" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <header class="modal-header">
+          <div>
+            <p>Gateway API</p>
+            <h2 id="modalTitle">Novo Diagrama</h2>
+          </div>
+          <button id="closeModalButton" class="icon-button" type="button" aria-label="Fechar">
+            <i data-lucide="x"></i>
+          </button>
+        </header>
+
+        <form id="diagramForm" class="diagram-form">
+          <label>
+            Título
+            <input id="diagramTitle" name="title" value="Diagrama UML" required />
+          </label>
+
+          <label>
+            Gateway URL
+            <input id="gatewayUrl" name="gateway_url" required />
+          </label>
+
+          <label>
+            Código-fonte
+            <textarea id="sourceCode" name="source_code" required></textarea>
+          </label>
+
+          <div class="modal-actions">
+            <button class="secondary-button" type="button" id="cancelButton">Cancelar</button>
+            <button class="primary-button" type="submit">
+              <i data-lucide="send"></i>
+              Gerar Diagrama
+            </button>
+          </div>
+        </form>
+
+        <div id="resultPanel" class="result-panel" hidden>
+          <div class="result-header">
+            <strong>PlantUML recebido</strong>
+            <span id="resultStatus">pronto</span>
+          </div>
+          <pre id="plantumlResult"></pre>
+        </div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="./src/config.js?v=0.1.0"></script>
+    <script src="./src/app.js?v=0.1.0"></script>
+  </body>
+</html>
