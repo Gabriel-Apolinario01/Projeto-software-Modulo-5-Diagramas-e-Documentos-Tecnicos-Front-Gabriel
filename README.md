@@ -1,21 +1,40 @@
-# DocuIA Frontend - Módulo de Diagramas
+# DocuIA Frontend - Modulo de Diagramas
 
-Frontend estático do **Módulo de Diagramas** da plataforma DocuIA.
+Frontend do modulo de Diagramas e Documentos Tecnicos da plataforma DocuIA.
 
-Este repositório representa o `docula-frontend` na divisão de microsserviços do grupo.
+Este repositorio representa a interface usada pelo usuario para criar, visualizar e acompanhar diagramas gerados a partir de codigo-fonte. Ele faz parte da arquitetura de microsservicos do projeto, mas sua responsabilidade e somente a camada visual.
 
-## Responsabilidade
+## Objetivo
 
-O frontend permite que o usuário:
+O objetivo do frontend e permitir que o usuario escolha um tipo de diagrama, envie um trecho de codigo e visualize o resultado retornado pelos servicos do backend.
 
-- escolha o tipo de diagrama;
-- clique em **Novo Diagrama**;
-- cole ou digite o código-fonte;
-- envie o código para o Gateway API;
-- receba o PlantUML;
-- visualize o resultado e o histórico local.
+A tela segue o padrao visual da plataforma DocuIA, com menu lateral, area principal do modulo, tipos de diagrama e historico de diagramas gerados.
 
-## Arquitetura do Grupo
+## Funcionalidades
+
+- Selecao de tipos de diagrama.
+- Criacao de novo diagrama.
+- Campo para envio de codigo-fonte.
+- Comunicacao com o Gateway API.
+- Exibicao do PlantUML retornado pelo backend.
+- Historico local dos diagramas gerados no navegador.
+
+## Tipos de Diagrama
+
+O modulo apresenta seis opcoes de diagramas:
+
+- UML de Classes.
+- Arquitetura de Sistema.
+- Infraestrutura Cloud.
+- Diagrama ER.
+- Perfis de Usuario.
+- Fluxo de Processo.
+
+Essas opcoes representam tipos de artefatos tecnicos que o usuario pode gerar. Elas nao sao microsservicos separados.
+
+## Arquitetura
+
+O frontend se comunica apenas com o Gateway API. O Gateway e responsavel por acionar os outros servicos do fluxo.
 
 ```text
 Frontend
@@ -31,113 +50,32 @@ Gateway API
 Banco PostgreSQL
 ```
 
-## Repositórios
+## Papel dos Repositorios
 
-| Repo | Função |
+| Repositorio | Responsabilidade |
 | --- | --- |
-| `docula-frontend` | Interface visual do módulo de diagramas |
-| `docula-gateway-api` | Orquestra fluxo, banco, parser e diagram API |
-| `docula-parser-api` | Extrai classes, atributos, métodos e endpoints |
-| `docula-diagram-api` | Gera PlantUML, Mermaid ou PNG |
+| `docula-frontend` | Interface do modulo de diagramas |
+| `docula-gateway-api` | Orquestracao entre frontend, banco e APIs internas |
+| `docula-parser-api` | Analise do codigo-fonte enviado |
+| `docula-diagram-api` | Geracao do diagrama em PlantUML, Mermaid ou PNG |
 
-## Endpoint Chamado pelo Front
+## Fluxo Principal
 
-```text
-POST http://127.0.0.1:8000/diagram/class
-```
+1. O usuario abre a pagina de diagramas.
+2. Escolhe o tipo de diagrama.
+3. Informa ou cola o codigo-fonte.
+4. O frontend envia os dados para o Gateway API.
+5. O Gateway aciona o Parser API e o Diagram API.
+6. O resultado volta para o frontend.
+7. O usuario visualiza o diagrama gerado e o historico local.
 
-JSON enviado:
+## Escopo deste Repositorio
 
-```json
-{
-  "title": "Diagrama UML",
-  "source_code": "public class Usuario { private String nome; public void login() { } }"
-}
-```
+Este repositorio contem somente o frontend do modulo 5. A logica de parser, geracao de PlantUML, persistencia em banco e orquestracao de microsservicos fica nos repositorios de backend do grupo.
 
-Resposta esperada:
+## Versao
 
-```json
-{
-  "plantuml": "@startuml\nclass Usuario\n@enduml"
-}
-```
-
-## Configurar Gateway
-
-Edite o arquivo:
-
-```text
-src/config.js
-```
-
-Local:
-
-```javascript
-window.DOCULA_GATEWAY_URL = "http://127.0.0.1:8000";
-```
-
-Azure:
-
-```javascript
-window.DOCULA_GATEWAY_URL = "https://SEU-GATEWAY.azurewebsites.net";
-```
-
-## Rodar Localmente
-
-Entre na pasta:
-
-```powershell
-cd "C:\Users\gabri\Downloads\Projeto - Modulo 5 (front)"
-```
-
-Suba um servidor estático:
-
-```powershell
-python -m http.server 5173
-```
-
-Acesse:
-
-```text
-http://127.0.0.1:5173
-```
-
-## Testar Integração
-
-1. Rode o Gateway API em `http://127.0.0.1:8000`.
-2. Rode este frontend em `http://127.0.0.1:5173`.
-3. Clique em **Novo Diagrama**.
-4. Cole um código Java.
-5. Clique em **Gerar Diagrama**.
-6. O front chama `POST /diagram/class`.
-7. O PlantUML aparece na tela.
-
-## Deploy na Azure
-
-Este projeto pode ser publicado como **Azure Static Web Apps**.
-
-Configuração sugerida:
-
-```text
-App location: /
-Output location: /
-Build command: vazio
-```
-
-Após o deploy, atualize `src/config.js` com a URL pública do Gateway.
-
-## Versionamento
-
-Sugestão de commits:
-
-```text
-feat(frontend): release v0.1.0 com tela de diagramas
-fix(frontend): corrige chamada ao gateway
-docs(frontend): adiciona instruções de deploy
-```
-
-Versão atual:
+Versao inicial do frontend:
 
 ```text
 v0.1.0
