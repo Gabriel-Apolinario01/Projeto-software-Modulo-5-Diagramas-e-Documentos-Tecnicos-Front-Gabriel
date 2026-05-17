@@ -69,6 +69,32 @@ Banco PostgreSQL
 6. O resultado volta para o frontend.
 7. O usuario visualiza o diagrama gerado e o historico local.
 
+## Rodar Localmente
+
+Entre na pasta do projeto:
+
+```powershell
+cd "C:\Users\gabri\Downloads\Projeto - Modulo 5 (front)"
+```
+
+Inicie um servidor local:
+
+```powershell
+python -m http.server 5173
+```
+
+Acesse no navegador:
+
+```text
+http://127.0.0.1:5173
+```
+
+Para testar a integracao completa, o Gateway API tambem precisa estar rodando em:
+
+```text
+http://127.0.0.1:8000
+```
+
 ## Escopo deste Repositorio
 
 Este repositorio contem somente o frontend do modulo 5. A logica de parser, geracao de PlantUML, persistencia em banco e orquestracao de microsservicos fica nos repositorios de backend do grupo.
