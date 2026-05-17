@@ -613,6 +613,129 @@ textarea {
   text-align: center;
 }
 
+.flow-preview,
+.process-preview {
+  display: flex;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.flow-node,
+.process-step {
+  display: grid;
+  min-width: 124px;
+  min-height: 82px;
+  place-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  gap: 7px;
+  padding: 12px;
+  text-align: center;
+}
+
+.flow-node svg {
+  width: 28px;
+  height: 28px;
+}
+
+.flow-node.primary {
+  border-color: #93c5fd;
+  background: #dbeafe;
+}
+
+.flow-node.storage {
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.flow-branches {
+  display: grid;
+  gap: 12px;
+}
+
+.flow-arrow,
+.process-arrow {
+  color: #64748b;
+  font-weight: 900;
+}
+
+.cloud-preview,
+.entity-preview,
+.persona-preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cloud-preview article,
+.persona-preview article,
+.entity-card {
+  display: grid;
+  min-height: 130px;
+  align-content: center;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+  color: #1f2937;
+  gap: 8px;
+  padding: 16px;
+}
+
+.cloud-preview svg,
+.persona-preview svg {
+  width: 32px;
+  height: 32px;
+  color: var(--blue);
+}
+
+.cloud-preview span,
+.persona-preview span {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.entity-card {
+  align-content: start;
+  overflow: hidden;
+  padding: 0 0 12px;
+}
+
+.entity-card header {
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 900;
+  padding: 12px 14px;
+}
+
+.entity-card span {
+  border-top: 1px solid #fed7aa;
+  color: #334155;
+  font-family: Consolas, "Courier New", monospace;
+  padding: 8px 14px 0;
+}
+
+.process-step {
+  min-width: 108px;
+  background: #ecfeff;
+  color: #0f766e;
+}
+
+.process-step span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: #14b8a6;
+  color: #fff;
+  font-weight: 900;
+}
+
 pre {
   max-height: 240px;
   overflow: auto;
