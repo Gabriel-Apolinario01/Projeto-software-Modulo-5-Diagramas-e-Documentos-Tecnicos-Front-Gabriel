@@ -25,9 +25,76 @@ const downloadSvgButton = document.querySelector("#download-svg-btn");
 const storageKey = "docula.frontend.diagrams.only.v1";
 const defaultGatewayUrl = window.DOCULA_GATEWAY_URL || "http://127.0.0.1:8000";
 
-const urlParams = new URLSearchParams(window.location.search);
-const projectId = urlParams.get("projectId") || urlParams.get("id") || "demo";
-const projectName = urlParams.get("projectName") || urlParams.get("name") || "Sistema E-commerce";
+function captureIntegrationParamsFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+
+  const token = params.get("token");
+  const projectIdParam = params.get("id") || params.get("projectId");
+  const companyIdParam = params.get("companyId") || params.get("company_id");
+  const projectNameParam = params.get("project_name") || params.get("projectName") || params.get("name");
+
+  if (token) {
+    sessionStorage.setItem("auth_token", token);
+  }
+
+  if (projectIdParam) {
+    sessionStorage.setItem("project_id", projectIdParam);
+  }
+
+  if (companyIdParam) {
+    sessionStorage.setItem("company_id", companyIdParam);
+  }
+
+  if (projectNameParam) {
+    sessionStorage.setItem("project_name", projectNameParam);
+  }
+
+  if (token) {
+    params.delete("token");
+
+    const queryString = params.toString();
+    const cleanUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
+
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+}
+
+function getAuthHeaders() {
+  const token = sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token");
+
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+function getProjectContext() {
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    project_id: sessionStorage.getItem("project_id") || params.get("id") || params.get("projectId") || "demo-project",
+    company_id:
+      sessionStorage.getItem("company_id") || params.get("companyId") || params.get("company_id") || "demo-company",
+    project_name:
+      sessionStorage.getItem("project_name") ||
+      params.get("project_name") ||
+      params.get("projectName") ||
+      params.get("name") ||
+      "Projeto DoculA",
+  };
+}
+
+captureIntegrationParamsFromUrl();
+
+const projectContext = getProjectContext();
+const projectId = projectContext.project_id;
+const companyId = projectContext.company_id;
+const projectName = projectContext.project_name;
 backProjectLabel.textContent = "Voltar";
 
 const diagramTypes = {
@@ -257,15 +324,16 @@ function getGatewayEndpoint(type) {
 }
 
 function buildGatewayPayload(type) {
+  const currentProjectContext = getProjectContext();
   const basePayload = {
-    project_id: projectId,
-    project_name: projectName,
+    project_id: currentProjectContext.project_id,
+    project_name: currentProjectContext.project_name,
+    company_id: currentProjectContext.company_id,
   };
 
   if (type === "architecture") {
     return {
       ...basePayload,
-      project_name: projectName,
       description: sourceCode.value || "Gerar arquitetura do sistema",
     };
   }
@@ -273,7 +341,6 @@ function buildGatewayPayload(type) {
   if (type === "cloud") {
     return {
       ...basePayload,
-      project_name: projectName,
       description: sourceCode.value || "Gerar infraestrutura cloud",
     };
   }
@@ -281,7 +348,6 @@ function buildGatewayPayload(type) {
   if (type === "persona") {
     return {
       ...basePayload,
-      project_name: projectName,
       description: sourceCode.value || "Gerar perfis de usuário",
       profiles: ["Desenvolvedor", "Tech Lead", "Gerente de Projetos"],
     };
@@ -290,18 +356,16 @@ function buildGatewayPayload(type) {
   if (type === "process") {
     return {
       ...basePayload,
-      project_name: projectName,
       description: sourceCode.value || "Gerar fluxo de processo",
     };
   }
 
   return {
+    ...basePayload,
     title: diagramTitle.value,
     source_code: sourceCode.value,
     diagram_type: type === "er" ? "er" : "uml-class",
     type,
-    project_id: projectId,
-    project_name: projectName,
   };
 }
 
@@ -315,9 +379,7 @@ async function generateDiagram() {
   try {
     const response = await fetch(`${gatewayUrl}${endpoint}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
 
@@ -344,6 +406,7 @@ async function generateDiagram() {
       createdAt: new Date().toISOString(),
       sourceCode: sourceCode.value,
       projectId,
+      companyId,
       projectName,
     });
 
