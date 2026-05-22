@@ -217,23 +217,81 @@ function closeModal() {
   document.body.style.overflow = "";
 }
 
-async function generateDiagram() {
-  const gatewayUrl = defaultGatewayUrl.replace(/\/$/, "");
-  const payload = {
-    title: diagramTitle.value,
-    source_code: sourceCode.value,
-    diagram_type: selectedDiagramType,
-    type: selectedDiagramType,
+function getGatewayEndpoint(type) {
+  const endpoints = {
+    class: "/diagram/class",
+    architecture: "/diagram/architecture",
+    cloud: "/diagram/cloud",
+    persona: "/diagram/profiles",
+    process: "/diagram/flow",
+    er: "/diagram/class",
+  };
+
+  return endpoints[type] || "/diagram/class";
+}
+
+function buildGatewayPayload(type) {
+  const basePayload = {
     project_id: projectId,
     project_name: projectName,
   };
 
+  if (type === "architecture") {
+    return {
+      ...basePayload,
+      project_name: projectName,
+      description: sourceCode.value || "Gerar arquitetura do sistema",
+    };
+  }
+
+  if (type === "cloud") {
+    return {
+      ...basePayload,
+      project_name: projectName,
+      description: sourceCode.value || "Gerar infraestrutura cloud",
+    };
+  }
+
+  if (type === "persona") {
+    return {
+      ...basePayload,
+      project_name: projectName,
+      description: sourceCode.value || "Gerar perfis de usuário",
+      profiles: ["Desenvolvedor", "Tech Lead", "Gerente de Projetos"],
+    };
+  }
+
+  if (type === "process") {
+    return {
+      ...basePayload,
+      project_name: projectName,
+      description: sourceCode.value || "Gerar fluxo de processo",
+    };
+  }
+
+  return {
+    title: diagramTitle.value,
+    source_code: sourceCode.value,
+    diagram_type: type === "er" ? "er" : "uml-class",
+    type,
+    project_id: projectId,
+    project_name: projectName,
+  };
+}
+
+async function generateDiagram() {
+  const gatewayUrl = defaultGatewayUrl.replace(/\/$/, "");
+  const endpoint = getGatewayEndpoint(selectedDiagramType);
+  const payload = buildGatewayPayload(selectedDiagramType);
+
   setLoading(true);
 
   try {
-    const response = await fetch(`${gatewayUrl}/diagram/class`, {
+    const response = await fetch(`${gatewayUrl}${endpoint}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(payload),
     });
 
@@ -243,25 +301,33 @@ async function generateDiagram() {
 
     const data = await response.json();
     const plantuml = extractPlantuml(data);
-    showGeneratedResult(plantuml || JSON.stringify(data, null, 2), selectedDiagramType, payload.title);
+
+    showGeneratedResult(
+      plantuml || JSON.stringify(data, null, 2),
+      selectedDiagramType,
+      payload.title || diagramTitle.value,
+    );
+
     resultStatus.textContent = "pronto";
 
     saveGeneratedDiagram({
-      title: payload.title,
+      title: payload.title || diagramTitle.value,
       type: selectedDiagramType,
       plantuml,
       elements: countElements(plantuml, selectedDiagramType),
       createdAt: new Date().toISOString(),
-      sourceCode: payload.source_code,
+      sourceCode: sourceCode.value,
       projectId,
+      projectName,
     });
+
     renderGeneratedDiagrams();
     showToast("Diagrama gerado com sucesso.");
   } catch (error) {
     resultPanel.hidden = false;
     resultStatus.textContent = "erro";
     plantumlResult.textContent = error.message;
-    diagramPreview.innerHTML = '<div class="preview-empty">Nao foi possivel gerar o diagrama.</div>';
+    diagramPreview.innerHTML = "<p>Nao foi possivel gerar o diagrama.</p>";
     showToast("Erro ao chamar o Gateway API.");
   } finally {
     setLoading(false);
