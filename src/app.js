@@ -18,6 +18,9 @@ const backToProject = document.querySelector("#backToProject");
 const backProjectLabel = document.querySelector("#backProjectLabel");
 const userToggle = document.querySelector("#userToggle");
 const userMenu = document.querySelector("#userMenu");
+const downloadPumlButton = document.querySelector("#download-puml-btn");
+const downloadPngButton = document.querySelector("#download-png-btn");
+const downloadSvgButton = document.querySelector("#download-svg-btn");
 
 const storageKey = "docula.frontend.diagrams.only.v1";
 const defaultGatewayUrl = window.DOCULA_GATEWAY_URL || "http://127.0.0.1:8000";
@@ -99,6 +102,8 @@ public class Desenvolvedor {
 };
 
 let selectedDiagramType = "class";
+let currentPlantuml = "";
+let currentDiagramTitle = "diagrama";
 
 const demoDiagrams = [
   {
@@ -185,6 +190,24 @@ diagramForm.addEventListener("submit", async (event) => {
   await generateDiagram();
 });
 
+downloadPumlButton?.addEventListener("click", () => {
+  if (!currentPlantuml) {
+    showToast("Nenhum diagrama disponivel para exportacao.");
+    return;
+  }
+
+  downloadTextFile(getDownloadFileName("puml"), currentPlantuml);
+  showToast("PUML exportado com sucesso.");
+});
+
+downloadPngButton?.addEventListener("click", async () => {
+  await exportRenderedDiagram("png");
+});
+
+downloadSvgButton?.addEventListener("click", async () => {
+  await exportRenderedDiagram("svg");
+});
+
 function openModal(type) {
   selectedDiagramType = diagramTypes[type] ? type : "class";
   const config = diagramTypes[selectedDiagramType];
@@ -196,6 +219,9 @@ function openModal(type) {
   resultPanel.hidden = true;
   plantumlResult.textContent = "";
   diagramPreview.innerHTML = "";
+  currentPlantuml = "";
+  currentDiagramTitle = config.title;
+  setExportActionsEnabled(false);
   modalBackdrop.hidden = false;
   document.body.style.overflow = "hidden";
   sourceCode.focus();
@@ -328,6 +354,8 @@ async function generateDiagram() {
     resultStatus.textContent = "erro";
     plantumlResult.textContent = error.message;
     diagramPreview.innerHTML = "<p>Nao foi possivel gerar o diagrama.</p>";
+    currentPlantuml = "";
+    setExportActionsEnabled(false);
     showToast("Erro ao chamar o Gateway API.");
   } finally {
     setLoading(false);
@@ -335,10 +363,24 @@ async function generateDiagram() {
 }
 
 function showGeneratedResult(plantuml, type = selectedDiagramType, title = diagramTitle.value) {
-  plantumlResult.textContent = plantuml || "Nenhum PlantUML foi retornado.";
+  const resultText = plantuml || "";
+  const hasPlantuml = isPlantuml(resultText);
+
+  currentPlantuml = hasPlantuml ? resultText : "";
+  currentDiagramTitle = title || diagramTitle.value || "diagrama";
+  plantumlResult.textContent = resultText || "Nenhum PlantUML foi retornado.";
   diagramPreview.innerHTML = renderDiagramPreview(plantuml, type, title);
   resultPanel.hidden = false;
+  setExportActionsEnabled(Boolean(currentPlantuml));
   window.lucide?.createIcons();
+}
+
+function setExportActionsEnabled(enabled) {
+  [downloadPumlButton, downloadPngButton, downloadSvgButton].forEach((button) => {
+    if (button) {
+      button.disabled = !enabled;
+    }
+  });
 }
 
 function setLoading(isLoading) {
@@ -421,7 +463,47 @@ function extractPlantuml(data) {
   return candidates.find((value) => typeof value === "string" && value.trim()) || "";
 }
 
+function getPlantUmlUrls(plantumlText) {
+  if (!isPlantuml(plantumlText)) {
+    return null;
+  }
+
+  const encoded = encodePlantUmlForUrl(plantumlText);
+
+  return {
+    png: `https://www.plantuml.com/plantuml/png/${encoded}`,
+    svg: `https://www.plantuml.com/plantuml/svg/${encoded}`,
+  };
+}
+
+function encodePlantUmlForUrl(plantumlText) {
+  if (window.plantumlEncoder?.encode) {
+    return window.plantumlEncoder.encode(plantumlText);
+  }
+
+  return `~h${bytesToHex(new TextEncoder().encode(plantumlText))}`;
+}
+
+function bytesToHex(bytes) {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 function renderDiagramPreview(plantuml, type, title) {
+  const urls = getPlantUmlUrls(plantuml);
+
+  if (urls) {
+    return `
+      <div class="plantuml-image-frame">
+        <img class="plantuml-preview-image" src="${urls.svg}" alt="Preview do diagrama" />
+        <p class="plantuml-preview-caption">Imagem renderizada pelo PlantUML Server</p>
+      </div>
+    `;
+  }
+
+  return renderLocalDiagramPreview(plantuml, type, title);
+}
+
+function renderLocalDiagramPreview(plantuml, type, title) {
   if (type === "architecture") return renderArchitecturePreview();
   if (type === "cloud") return renderCloudPreview();
   if (type === "er") return renderEntityPreview(plantuml);
@@ -558,6 +640,76 @@ class Projeto {
   +gerarDiagrama() : void
 }
 @enduml`;
+}
+
+function isPlantuml(value) {
+  return typeof value === "string" && /@start(uml|mindmap|salt|gantt|wbs|json|yaml)/i.test(value);
+}
+
+function getDownloadFileName(extension) {
+  const baseName = (currentDiagramTitle || diagramTitle.value || "diagrama")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_-]+/gi, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 80);
+
+  return `${baseName || "diagrama"}.${extension}`;
+}
+
+function downloadTextFile(filename, content, mimeType = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+async function downloadFromUrl(url, filename) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`PlantUML Server respondeu HTTP ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(objectUrl);
+}
+
+async function exportRenderedDiagram(format) {
+  if (!currentPlantuml) {
+    showToast("Nenhum diagrama disponivel para exportacao.");
+    return;
+  }
+
+  const urls = getPlantUmlUrls(currentPlantuml);
+
+  if (!urls) {
+    showToast("Renderizador PlantUML indisponivel.");
+    return;
+  }
+
+  try {
+    await downloadFromUrl(urls[format], getDownloadFileName(format));
+    showToast(`${format.toUpperCase()} exportado com sucesso.`);
+  } catch {
+    showToast(`Erro ao exportar ${format.toUpperCase()}.`);
+  }
 }
 
 function countElements(plantuml, type = "class") {

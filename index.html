@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DocuIA - Modulo de Diagramas</title>
-    <link rel="stylesheet" href="./src/styles.css?v=0.4.0" />
+    <link rel="stylesheet" href="./src/styles.css?v=0.3.0" />
     <script src="https://unpkg.com/lucide@latest"></script>
   </head>
   <body class="dashboard-body">
@@ -164,6 +164,20 @@
             <strong>Resultado gerado</strong>
             <span id="resultStatus">pronto</span>
           </div>
+          <div class="diagram-actions" aria-label="Exportar diagrama">
+            <button id="download-puml-btn" class="export-button" type="button">
+              <i data-lucide="file-code-2"></i>
+              Baixar .puml
+            </button>
+            <button id="download-png-btn" class="export-button" type="button">
+              <i data-lucide="image-down"></i>
+              Baixar .png
+            </button>
+            <button id="download-svg-btn" class="export-button" type="button">
+              <i data-lucide="file-down"></i>
+              Baixar .svg
+            </button>
+          </div>
           <div id="diagramPreview" class="diagram-preview"></div>
           <pre id="plantumlResult"></pre>
         </div>
@@ -172,7 +186,8 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./src/config.js?v=0.4.0"></script>
-    <script src="./src/app.js?v=0.4.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/plantuml-encoder/dist/plantuml-encoder.min.js"></script>
+    <script src="./src/config.js?v=0.3.0"></script>
+    <script src="./src/app.js?v=0.3.0"></script>
   </body>
 </html>

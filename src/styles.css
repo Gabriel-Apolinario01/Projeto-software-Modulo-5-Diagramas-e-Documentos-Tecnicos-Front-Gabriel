@@ -865,6 +865,42 @@ button {
   color: var(--muted);
 }
 
+.diagram-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.export-button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #0f172a;
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.export-button:hover:not(:disabled) {
+  border-color: #465cf4;
+  color: #465cf4;
+}
+
+.export-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.export-button svg {
+  width: 16px;
+  height: 16px;
+}
+
 .diagram-preview {
   min-height: 180px;
   overflow: auto;
@@ -872,6 +908,30 @@ button {
   border-radius: 12px;
   background: #f8fafc;
   padding: 20px;
+}
+
+.plantuml-image-frame {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.plantuml-preview-image {
+  display: block;
+  max-width: 100%;
+  min-width: min(260px, 100%);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.1);
+}
+
+.plantuml-preview-caption,
+.preview-empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
 }
 
 .uml-board {
@@ -1798,5 +1858,13 @@ body {
   .type-grid,
   .generated-grid {
     grid-template-columns: 1fr;
+  }
+
+  .diagram-actions {
+    flex-direction: column;
+  }
+
+  .export-button {
+    width: 100%;
   }
 }
