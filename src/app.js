@@ -18,6 +18,9 @@ const backToProject = document.querySelector("#backToProject");
 const backProjectLabel = document.querySelector("#backProjectLabel");
 const userToggle = document.querySelector("#userToggle");
 const userMenu = document.querySelector("#userMenu");
+const userAvatar = document.querySelector("#userAvatar");
+const userName = document.querySelector("#userName");
+const userEmail = document.querySelector("#userEmail");
 const downloadPumlButton = document.querySelector("#download-puml-btn");
 const downloadPngButton = document.querySelector("#download-png-btn");
 const downloadSvgButton = document.querySelector("#download-svg-btn");
@@ -35,6 +38,9 @@ function captureIntegrationParamsFromUrl() {
   const companyIdParam = params.get("companyId") || params.get("company_id");
   const projectNameParam = params.get("project_name") || params.get("projectName") || params.get("name");
   const returnUrlParam = params.get("returnUrl") || params.get("return_url") || params.get("redirect");
+  const userNameParam =
+    params.get("userName") || params.get("user_name") || params.get("nome") || params.get("name_user");
+  const userEmailParam = params.get("userEmail") || params.get("user_email") || params.get("email");
 
   if (token) {
     sessionStorage.setItem("auth_token", token);
@@ -58,6 +64,12 @@ function captureIntegrationParamsFromUrl() {
     sessionStorage.setItem("return_url", document.referrer);
   }
 
+  persistUserContext({
+    name: userNameParam,
+    email: userEmailParam,
+    token,
+  });
+
   if (token) {
     params.delete("token");
 
@@ -66,6 +78,92 @@ function captureIntegrationParamsFromUrl() {
 
     window.history.replaceState({}, document.title, cleanUrl);
   }
+}
+
+function persistUserContext({ name, email, token }) {
+  const tokenPayload = decodeJwtPayload(token || sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token"));
+  const resolvedName =
+    name ||
+    tokenPayload?.nome ||
+    tokenPayload?.name ||
+    tokenPayload?.full_name ||
+    tokenPayload?.username ||
+    tokenPayload?.preferred_username;
+  const resolvedEmail = email || tokenPayload?.email || tokenPayload?.sub;
+  const fallbackName = resolvedEmail?.includes("@") ? resolvedEmail.split("@")[0] : "";
+
+  if (resolvedName || fallbackName) {
+    sessionStorage.setItem("user_name", resolvedName || fallbackName);
+  }
+
+  if (resolvedEmail) {
+    sessionStorage.setItem("user_email", resolvedEmail);
+  }
+}
+
+function decodeJwtPayload(token) {
+  if (!token || token.split(".").length < 2) {
+    return {};
+  }
+
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const json = decodeURIComponent(
+      atob(paddedBase64)
+        .split("")
+        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
+        .join("")
+    );
+
+    return JSON.parse(json);
+  } catch (error) {
+    return {};
+  }
+}
+
+function getUserContext() {
+  return {
+    name: sessionStorage.getItem("user_name") || "Usuario",
+    email: sessionStorage.getItem("user_email") || "",
+  };
+}
+
+function renderUserContext() {
+  const currentUser = getUserContext();
+  const displayName = currentUser.name || "Usuario";
+  const displayEmail = currentUser.email || "";
+
+  if (userName) {
+    userName.textContent = displayName;
+  }
+
+  if (userEmail) {
+    userEmail.textContent = displayEmail;
+    userEmail.hidden = !displayEmail;
+  }
+
+  if (userAvatar) {
+    userAvatar.textContent = getUserInitials(displayName);
+  }
+}
+
+function getUserInitials(name) {
+  const words = String(name || "Usuario")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) {
+    return "U";
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 1).toUpperCase();
+  }
+
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
 function buildModuleOneUrl(path, params = {}) {
@@ -148,6 +246,7 @@ const companyId = projectContext.company_id;
 const projectName = projectContext.project_name;
 backProjectLabel.textContent = "Voltar";
 configureModuleOneNavigation();
+renderUserContext();
 
 const diagramTypes = {
   class: {
