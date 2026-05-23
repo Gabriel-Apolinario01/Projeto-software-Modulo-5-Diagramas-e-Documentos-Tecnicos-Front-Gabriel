@@ -24,6 +24,8 @@ const downloadSvgButton = document.querySelector("#download-svg-btn");
 
 const storageKey = "docula.frontend.diagrams.only.v1";
 const defaultGatewayUrl = window.DOCULA_GATEWAY_URL || "http://127.0.0.1:8000";
+const moduleOneBaseUrl =
+  window.DOCIA_MODULE_ONE_URL || "https://docuia-frontend-hdc8hzfqbqebc6cp.brazilsouth-01.azurewebsites.net";
 
 function captureIntegrationParamsFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -32,6 +34,7 @@ function captureIntegrationParamsFromUrl() {
   const projectIdParam = params.get("id") || params.get("projectId");
   const companyIdParam = params.get("companyId") || params.get("company_id");
   const projectNameParam = params.get("project_name") || params.get("projectName") || params.get("name");
+  const returnUrlParam = params.get("returnUrl") || params.get("return_url") || params.get("redirect");
 
   if (token) {
     sessionStorage.setItem("auth_token", token);
@@ -49,6 +52,12 @@ function captureIntegrationParamsFromUrl() {
     sessionStorage.setItem("project_name", projectNameParam);
   }
 
+  if (returnUrlParam) {
+    sessionStorage.setItem("return_url", returnUrlParam);
+  } else if (document.referrer && !document.referrer.startsWith(window.location.origin)) {
+    sessionStorage.setItem("return_url", document.referrer);
+  }
+
   if (token) {
     params.delete("token");
 
@@ -57,6 +66,48 @@ function captureIntegrationParamsFromUrl() {
 
     window.history.replaceState({}, document.title, cleanUrl);
   }
+}
+
+function buildModuleOneUrl(path, params = {}) {
+  const url = new URL(path, moduleOneBaseUrl);
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value && !String(value).startsWith("demo-")) {
+      url.searchParams.set(key, value);
+    }
+  });
+
+  return url.toString();
+}
+
+function getBackToProjectUrl() {
+  const storedReturnUrl = sessionStorage.getItem("return_url");
+
+  if (storedReturnUrl) {
+    return storedReturnUrl;
+  }
+
+  if (projectId && !projectId.startsWith("demo-")) {
+    return buildModuleOneUrl("/projeto", { id: projectId });
+  }
+
+  return buildModuleOneUrl("/projetos");
+}
+
+function configureModuleOneNavigation() {
+  const navigationLinks = {
+    "/dashboard": buildModuleOneUrl("/dashboard"),
+    "/empresas": buildModuleOneUrl("/empresas"),
+    "/projetos": buildModuleOneUrl("/projetos"),
+  };
+
+  document.querySelectorAll(".menu-link").forEach((link) => {
+    const targetUrl = navigationLinks[link.getAttribute("href")];
+
+    if (targetUrl) {
+      link.href = targetUrl;
+    }
+  });
 }
 
 function getAuthHeaders() {
@@ -96,6 +147,7 @@ const projectId = projectContext.project_id;
 const companyId = projectContext.company_id;
 const projectName = projectContext.project_name;
 backProjectLabel.textContent = "Voltar";
+configureModuleOneNavigation();
 
 const diagramTypes = {
   class: {
@@ -208,9 +260,14 @@ newDiagramButton.addEventListener("click", () => openModal("class"));
 closeModalButton.addEventListener("click", closeModal);
 cancelButton.addEventListener("click", closeModal);
 backToProject.addEventListener("click", () => {
-  if (window.history.length > 1) {
+  const returnUrl = getBackToProjectUrl();
+
+  if (document.referrer && document.referrer === returnUrl && window.history.length > 1) {
     window.history.back();
+    return;
   }
+
+  window.location.href = returnUrl;
 });
 
 userToggle?.addEventListener("click", (event) => {
