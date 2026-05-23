@@ -504,6 +504,19 @@ function getGatewayEndpoint(type) {
   return endpoints[type] || "/diagram/class";
 }
 
+function getAiDiagramType(type) {
+  const diagramTypeLabels = {
+    class: "UML de Classes",
+    architecture: "Arquitetura de Sistema",
+    cloud: "Infraestrutura Cloud",
+    persona: "Perfis de Usuario",
+    process: "Fluxo de Processo",
+    er: "Diagrama ER",
+  };
+
+  return diagramTypeLabels[type] || "UML de Classes";
+}
+
 function buildGatewayPayload(type) {
   const currentProjectContext = getProjectContext();
   const basePayload = {
@@ -550,40 +563,70 @@ function buildGatewayPayload(type) {
   };
 }
 
+function buildAiGatewayPayload(type) {
+  const currentProjectContext = getProjectContext();
+
+  return {
+    tipo_diagrama: getAiDiagramType(type),
+    titulo: diagramTitle.value || getAiDiagramType(type),
+    codigo_fonte: sourceCode.value || "",
+    projeto_id: currentProjectContext.project_id,
+  };
+}
+
+async function requestGatewayDiagram(gatewayUrl, endpoint, payload) {
+  const response = await fetch(`${gatewayUrl}${endpoint}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gateway respondeu HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
 async function generateDiagram() {
   const gatewayUrl = defaultGatewayUrl.replace(/\/$/, "");
-  const endpoint = getGatewayEndpoint(selectedDiagramType);
-  const payload = buildGatewayPayload(selectedDiagramType);
+  const aiPayload = buildAiGatewayPayload(selectedDiagramType);
+  let payload = aiPayload;
 
   setLoading(true);
 
   try {
-    const response = await fetch(`${gatewayUrl}${endpoint}`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(payload),
-    });
+    let data;
 
-    if (!response.ok) {
-      throw new Error(`Gateway respondeu HTTP ${response.status}`);
+    try {
+      data = await requestGatewayDiagram(
+        gatewayUrl,
+        "/api/modulo5/diagramas/gerar-ia",
+        aiPayload,
+      );
+    } catch (error) {
+      const fallbackEndpoint = getGatewayEndpoint(selectedDiagramType);
+      payload = buildGatewayPayload(selectedDiagramType);
+      data = await requestGatewayDiagram(gatewayUrl, fallbackEndpoint, payload);
+      showToast("IA indisponivel. Diagrama gerado pelo fluxo padrao.");
     }
 
-    const data = await response.json();
     const plantuml = extractPlantuml(data);
+    const resultTitle = data.title || payload.title || aiPayload.titulo || diagramTitle.value;
 
     showGeneratedResult(
       plantuml || JSON.stringify(data, null, 2),
       selectedDiagramType,
-      payload.title || diagramTitle.value,
+      resultTitle,
     );
 
     resultStatus.textContent = "pronto";
 
     saveGeneratedDiagram({
-      title: payload.title || diagramTitle.value,
+      title: resultTitle,
       type: selectedDiagramType,
       plantuml,
-      elements: countElements(plantuml, selectedDiagramType),
+      elements: data.elements_count || countElements(plantuml, selectedDiagramType),
       createdAt: new Date().toISOString(),
       sourceCode: sourceCode.value,
       projectId,
