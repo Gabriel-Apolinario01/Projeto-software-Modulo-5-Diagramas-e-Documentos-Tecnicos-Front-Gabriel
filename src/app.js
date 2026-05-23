@@ -195,10 +195,8 @@ function buildModuleOneUrl(path, params = {}) {
   return url.toString();
 }
 
-function getLoginUrl() {
-  return buildModuleOneUrl("/login", {
-    returnUrl: window.location.href,
-  });
+function getModuleOneEntryUrl() {
+  return buildModuleOneUrl("/projetos");
 }
 
 function redirectToLoginIfUnauthenticated() {
@@ -208,7 +206,7 @@ function redirectToLoginIfUnauthenticated() {
     return;
   }
 
-  window.location.replace(getLoginUrl());
+  window.location.replace(getModuleOneEntryUrl());
 }
 
 function getBackToProjectUrl() {
