@@ -21,6 +21,7 @@ const userMenu = document.querySelector("#userMenu");
 const userAvatar = document.querySelector("#userAvatar");
 const userName = document.querySelector("#userName");
 const userEmail = document.querySelector("#userEmail");
+const logoutLink = document.querySelector("#logoutLink");
 const downloadPumlButton = document.querySelector("#download-puml-btn");
 const downloadPngButton = document.querySelector("#download-png-btn");
 const downloadSvgButton = document.querySelector("#download-svg-btn");
@@ -178,6 +179,22 @@ function buildModuleOneUrl(path, params = {}) {
   return url.toString();
 }
 
+function getLoginUrl() {
+  return buildModuleOneUrl("/login", {
+    returnUrl: window.location.href,
+  });
+}
+
+function redirectToLoginIfUnauthenticated() {
+  const token = sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token");
+
+  if (token) {
+    return;
+  }
+
+  window.location.replace(getLoginUrl());
+}
+
 function getBackToProjectUrl() {
   const storedReturnUrl = sessionStorage.getItem("return_url");
 
@@ -206,6 +223,12 @@ function configureModuleOneNavigation() {
       link.href = targetUrl;
     }
   });
+}
+
+function configureLogoutLink() {
+  if (logoutLink) {
+    logoutLink.href = buildModuleOneUrl("/login");
+  }
 }
 
 function getAuthHeaders() {
@@ -239,6 +262,7 @@ function getProjectContext() {
 }
 
 captureIntegrationParamsFromUrl();
+redirectToLoginIfUnauthenticated();
 
 const projectContext = getProjectContext();
 const projectId = projectContext.project_id;
@@ -246,6 +270,7 @@ const companyId = projectContext.company_id;
 const projectName = projectContext.project_name;
 backProjectLabel.textContent = "Voltar";
 configureModuleOneNavigation();
+configureLogoutLink();
 renderUserContext();
 
 const diagramTypes = {
