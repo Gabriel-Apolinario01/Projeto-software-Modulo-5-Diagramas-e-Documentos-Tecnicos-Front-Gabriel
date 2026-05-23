@@ -31,6 +31,22 @@ const defaultGatewayUrl = window.DOCULA_GATEWAY_URL || "http://127.0.0.1:8000";
 const moduleOneBaseUrl =
   window.DOCIA_MODULE_ONE_URL || "https://docuia-frontend-hdc8hzfqbqebc6cp.brazilsouth-01.azurewebsites.net";
 
+function storeContextValue(key, value, persist = false) {
+  if (!value) {
+    return;
+  }
+
+  sessionStorage.setItem(key, value);
+
+  if (persist) {
+    localStorage.setItem(key, value);
+  }
+}
+
+function getStoredContextValue(key) {
+  return sessionStorage.getItem(key) || localStorage.getItem(key);
+}
+
 function captureIntegrationParamsFromUrl() {
   const params = new URLSearchParams(window.location.search);
 
@@ -44,25 +60,25 @@ function captureIntegrationParamsFromUrl() {
   const userEmailParam = params.get("userEmail") || params.get("user_email") || params.get("email");
 
   if (token) {
-    sessionStorage.setItem("auth_token", token);
+    storeContextValue("auth_token", token, true);
   }
 
   if (projectIdParam) {
-    sessionStorage.setItem("project_id", projectIdParam);
+    storeContextValue("project_id", projectIdParam, true);
   }
 
   if (companyIdParam) {
-    sessionStorage.setItem("company_id", companyIdParam);
+    storeContextValue("company_id", companyIdParam, true);
   }
 
   if (projectNameParam) {
-    sessionStorage.setItem("project_name", projectNameParam);
+    storeContextValue("project_name", projectNameParam, true);
   }
 
   if (returnUrlParam) {
-    sessionStorage.setItem("return_url", returnUrlParam);
+    storeContextValue("return_url", returnUrlParam, true);
   } else if (document.referrer && !document.referrer.startsWith(window.location.origin)) {
-    sessionStorage.setItem("return_url", document.referrer);
+    storeContextValue("return_url", document.referrer, true);
   }
 
   persistUserContext({
@@ -82,7 +98,7 @@ function captureIntegrationParamsFromUrl() {
 }
 
 function persistUserContext({ name, email, token }) {
-  const tokenPayload = decodeJwtPayload(token || sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token"));
+  const tokenPayload = decodeJwtPayload(token || getStoredContextValue("auth_token"));
   const resolvedName =
     name ||
     tokenPayload?.nome ||
@@ -94,11 +110,11 @@ function persistUserContext({ name, email, token }) {
   const fallbackName = resolvedEmail?.includes("@") ? resolvedEmail.split("@")[0] : "";
 
   if (resolvedName || fallbackName) {
-    sessionStorage.setItem("user_name", resolvedName || fallbackName);
+    storeContextValue("user_name", resolvedName || fallbackName, true);
   }
 
   if (resolvedEmail) {
-    sessionStorage.setItem("user_email", resolvedEmail);
+    storeContextValue("user_email", resolvedEmail, true);
   }
 }
 
@@ -126,8 +142,8 @@ function decodeJwtPayload(token) {
 
 function getUserContext() {
   return {
-    name: sessionStorage.getItem("user_name") || "Usuario",
-    email: sessionStorage.getItem("user_email") || "",
+    name: getStoredContextValue("user_name") || "Usuario",
+    email: getStoredContextValue("user_email") || "",
   };
 }
 
@@ -186,7 +202,7 @@ function getLoginUrl() {
 }
 
 function redirectToLoginIfUnauthenticated() {
-  const token = sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token");
+  const token = getStoredContextValue("auth_token");
 
   if (token) {
     return;
@@ -196,7 +212,7 @@ function redirectToLoginIfUnauthenticated() {
 }
 
 function getBackToProjectUrl() {
-  const storedReturnUrl = sessionStorage.getItem("return_url");
+  const storedReturnUrl = getStoredContextValue("return_url");
 
   if (storedReturnUrl) {
     return storedReturnUrl;
@@ -228,11 +244,12 @@ function configureModuleOneNavigation() {
 function configureLogoutLink() {
   if (logoutLink) {
     logoutLink.href = buildModuleOneUrl("/login");
+    logoutLink.addEventListener("click", clearAuthContext);
   }
 }
 
 function getAuthHeaders() {
-  const token = sessionStorage.getItem("auth_token") || localStorage.getItem("auth_token");
+  const token = getStoredContextValue("auth_token");
 
   const headers = {
     "Content-Type": "application/json",
@@ -249,16 +266,31 @@ function getProjectContext() {
   const params = new URLSearchParams(window.location.search);
 
   return {
-    project_id: sessionStorage.getItem("project_id") || params.get("id") || params.get("projectId") || "demo-project",
+    project_id: getStoredContextValue("project_id") || params.get("id") || params.get("projectId") || "demo-project",
     company_id:
-      sessionStorage.getItem("company_id") || params.get("companyId") || params.get("company_id") || "demo-company",
+      getStoredContextValue("company_id") || params.get("companyId") || params.get("company_id") || "demo-company",
     project_name:
-      sessionStorage.getItem("project_name") ||
+      getStoredContextValue("project_name") ||
       params.get("project_name") ||
       params.get("projectName") ||
       params.get("name") ||
       "Projeto DoculA",
   };
+}
+
+function clearAuthContext() {
+  [
+    "auth_token",
+    "project_id",
+    "company_id",
+    "project_name",
+    "return_url",
+    "user_name",
+    "user_email",
+  ].forEach((key) => {
+    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
+  });
 }
 
 captureIntegrationParamsFromUrl();
