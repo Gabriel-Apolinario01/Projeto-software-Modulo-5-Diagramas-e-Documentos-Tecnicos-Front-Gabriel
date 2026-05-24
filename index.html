@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DocIA - Modulo de Diagramas</title>
-    <link rel="stylesheet" href="./src/styles.css?v=0.3.1" />
+    <link rel="stylesheet" href="./src/styles.css?v=0.3.2" />
     <script src="https://unpkg.com/lucide@latest"></script>
   </head>
   <body class="dashboard-body">
@@ -138,18 +138,31 @@
             Titulo
             <input id="diagramTitle" name="title" value="Diagrama UML" required />
           </label>
+          <div class="source-mode-panel">
+            <label class="field-label">Origem do codigo</label>
+            <div class="source-mode-options">
+              <label>
+                <input type="radio" name="source-mode" value="manual" checked />
+                Colar codigo manualmente
+              </label>
+              <label>
+                <input type="radio" name="source-mode" value="project-files" />
+                Usar arquivos do projeto
+              </label>
+            </div>
+          </div>
           <label>
             Codigo-fonte
             <textarea id="sourceCode" name="source_code" required></textarea>
           </label>
-          <section class="artifact-picker" aria-label="Dados do projeto">
+          <section id="projectArtifactsPanel" class="artifact-picker" aria-label="Dados do projeto" hidden>
             <div class="artifact-picker-header">
               <div>
                 <strong>Dados do projeto</strong>
-                <span id="artifactStatus">Carregando arquivos do Modulo 2...</span>
+                <span id="artifactStatus">Clique em carregar arquivos para buscar dados do Modulo 2.</span>
               </div>
               <button class="secondary-button compact" type="button" id="refreshArtifactsButton">
-                Atualizar
+                Carregar arquivos
               </button>
             </div>
             <div id="artifactList" class="artifact-list"></div>
@@ -191,7 +204,7 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/plantuml-encoder/dist/plantuml-encoder.min.js"></script>
-    <script src="./src/config.js?v=0.3.1"></script>
-    <script src="./src/app.js?v=0.3.1"></script>
+    <script src="./src/config.js?v=0.3.2"></script>
+    <script src="./src/app.js?v=0.3.2"></script>
   </body>
 </html>

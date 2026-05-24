@@ -6,6 +6,8 @@ const diagramForm = document.querySelector("#diagramForm");
 const modalTitle = document.querySelector("#modalTitle");
 const diagramTitle = document.querySelector("#diagramTitle");
 const sourceCode = document.querySelector("#sourceCode");
+const sourceModeInputs = document.querySelectorAll('input[name="source-mode"]');
+const projectArtifactsPanel = document.querySelector("#projectArtifactsPanel");
 const artifactStatus = document.querySelector("#artifactStatus");
 const artifactList = document.querySelector("#artifactList");
 const refreshArtifactsButton = document.querySelector("#refreshArtifactsButton");
@@ -279,6 +281,24 @@ function getProjectContext() {
   };
 }
 
+function getSelectedSourceMode() {
+  const selected = document.querySelector('input[name="source-mode"]:checked');
+  return selected?.value || "manual";
+}
+
+function updateSourceModeUI() {
+  const mode = getSelectedSourceMode();
+  const useProjectFiles = mode === "project-files";
+
+  if (projectArtifactsPanel) {
+    projectArtifactsPanel.hidden = !useProjectFiles;
+  }
+
+  if (sourceCode) {
+    sourceCode.disabled = useProjectFiles;
+  }
+}
+
 function clearAuthContext() {
   [
     "auth_token",
@@ -417,6 +437,9 @@ window.lucide?.createIcons();
 newDiagramButton.addEventListener("click", () => openModal("class"));
 closeModalButton.addEventListener("click", closeModal);
 cancelButton.addEventListener("click", closeModal);
+sourceModeInputs.forEach((input) => {
+  input.addEventListener("change", updateSourceModeUI);
+});
 refreshArtifactsButton?.addEventListener("click", () => loadProjectArtifacts(true));
 backToProject.addEventListener("click", () => {
   const returnUrl = getBackToProjectUrl();
@@ -504,10 +527,17 @@ function openModal(type) {
   diagramPreview.innerHTML = "";
   currentPlantuml = "";
   currentDiagramTitle = config.title;
+  projectArtifacts = [];
+  artifactList.innerHTML = "";
+  artifactStatus.textContent = "Clique em carregar arquivos para buscar dados do Modulo 2.";
+  const manualSourceInput = document.querySelector('input[name="source-mode"][value="manual"]');
+  if (manualSourceInput) {
+    manualSourceInput.checked = true;
+  }
+  updateSourceModeUI();
   setExportActionsEnabled(false);
   modalBackdrop.hidden = false;
   document.body.style.overflow = "hidden";
-  loadProjectArtifacts();
   sourceCode.focus();
 }
 
@@ -601,13 +631,14 @@ function buildGatewayPayload(type) {
 
 function buildAiGatewayPayload(type) {
   const currentProjectContext = getProjectContext();
+  const sourceMode = getSelectedSourceMode();
 
   return {
     tipo_diagrama: getAiDiagramType(type),
     titulo: diagramTitle.value || getAiDiagramType(type),
-    codigo_fonte: sourceCode.value || "",
-    projeto_id: currentProjectContext.project_id,
-    artifact_ids: getSelectedArtifactIds(),
+    codigo_fonte: sourceMode === "project-files" ? "" : sourceCode.value || "",
+    projeto_id: sourceMode === "project-files" ? currentProjectContext.project_id : null,
+    artifact_ids: sourceMode === "project-files" ? getSelectedArtifactIds() : [],
   };
 }
 
@@ -675,7 +706,7 @@ function renderArtifactOptions() {
 
       return `
         <label class="artifact-option">
-          <input type="checkbox" value="${id}" checked />
+          <input type="checkbox" value="${id}" />
           <span>
             ${name}
             <small>${type}</small>
@@ -714,6 +745,11 @@ async function generateDiagram() {
   const gatewayUrl = defaultGatewayUrl.replace(/\/$/, "");
   const aiPayload = buildAiGatewayPayload(selectedDiagramType);
   let payload = aiPayload;
+
+  if (getSelectedSourceMode() === "project-files" && !aiPayload.artifact_ids.length) {
+    showToast("Selecione pelo menos um arquivo do projeto.");
+    return;
+  }
 
   setLoading(true);
 
