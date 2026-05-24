@@ -935,6 +935,21 @@ button {
   font-weight: 700;
 }
 
+.save-generated-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.save-generated-option input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
 .secondary-button.compact {
   min-width: 86px;
   height: 36px;

@@ -11,6 +11,7 @@ const projectArtifactsPanel = document.querySelector("#projectArtifactsPanel");
 const artifactStatus = document.querySelector("#artifactStatus");
 const artifactList = document.querySelector("#artifactList");
 const refreshArtifactsButton = document.querySelector("#refreshArtifactsButton");
+const saveToUploadModuleInput = document.querySelector("#saveToUploadModule");
 const generatedGrid = document.querySelector("#generatedGrid");
 const diagramCount = document.querySelector("#diagramCount");
 const clearHistoryButton = document.querySelector("#clearHistoryButton");
@@ -534,6 +535,9 @@ function openModal(type) {
   if (manualSourceInput) {
     manualSourceInput.checked = true;
   }
+  if (saveToUploadModuleInput) {
+    saveToUploadModuleInput.checked = false;
+  }
   updateSourceModeUI();
   setExportActionsEnabled(false);
   modalBackdrop.hidden = false;
@@ -639,6 +643,7 @@ function buildAiGatewayPayload(type) {
     codigo_fonte: sourceMode === "project-files" ? "" : sourceCode.value || "",
     projeto_id: sourceMode === "project-files" ? currentProjectContext.project_id : null,
     artifact_ids: sourceMode === "project-files" ? getSelectedArtifactIds() : [],
+    save_to_upload_module: sourceMode === "project-files" && Boolean(saveToUploadModuleInput?.checked),
   };
 }
 
@@ -793,7 +798,13 @@ async function generateDiagram() {
     });
 
     renderGeneratedDiagrams();
-    showToast("Diagrama gerado com sucesso.");
+    if (data.upload_status === "saved") {
+      showToast("Diagrama gerado e salvo no Modulo 2.");
+    } else if (data.upload_status === "failed") {
+      showToast("Diagrama gerado, mas nao foi salvo no Modulo 2.");
+    } else {
+      showToast("Diagrama gerado com sucesso.");
+    }
   } catch (error) {
     resultPanel.hidden = false;
     resultStatus.textContent = "erro";
