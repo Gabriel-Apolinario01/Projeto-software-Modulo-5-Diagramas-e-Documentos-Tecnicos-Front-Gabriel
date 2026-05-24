@@ -142,6 +142,18 @@
             Codigo-fonte
             <textarea id="sourceCode" name="source_code" required></textarea>
           </label>
+          <section class="artifact-picker" aria-label="Dados do projeto">
+            <div class="artifact-picker-header">
+              <div>
+                <strong>Dados do projeto</strong>
+                <span id="artifactStatus">Carregando arquivos do Modulo 2...</span>
+              </div>
+              <button class="secondary-button compact" type="button" id="refreshArtifactsButton">
+                Atualizar
+              </button>
+            </div>
+            <div id="artifactList" class="artifact-list"></div>
+          </section>
           <div class="modal-actions">
             <button class="secondary-button" type="button" id="cancelButton">Cancelar</button>
             <button class="primary-action" type="submit">

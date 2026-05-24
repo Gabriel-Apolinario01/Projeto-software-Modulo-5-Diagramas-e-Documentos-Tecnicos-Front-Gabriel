@@ -6,6 +6,9 @@ const diagramForm = document.querySelector("#diagramForm");
 const modalTitle = document.querySelector("#modalTitle");
 const diagramTitle = document.querySelector("#diagramTitle");
 const sourceCode = document.querySelector("#sourceCode");
+const artifactStatus = document.querySelector("#artifactStatus");
+const artifactList = document.querySelector("#artifactList");
+const refreshArtifactsButton = document.querySelector("#refreshArtifactsButton");
 const generatedGrid = document.querySelector("#generatedGrid");
 const diagramCount = document.querySelector("#diagramCount");
 const clearHistoryButton = document.querySelector("#clearHistoryButton");
@@ -377,6 +380,7 @@ public class Desenvolvedor {
 let selectedDiagramType = "class";
 let currentPlantuml = "";
 let currentDiagramTitle = "diagrama";
+let projectArtifacts = [];
 
 const demoDiagrams = [
   {
@@ -413,6 +417,7 @@ window.lucide?.createIcons();
 newDiagramButton.addEventListener("click", () => openModal("class"));
 closeModalButton.addEventListener("click", closeModal);
 cancelButton.addEventListener("click", closeModal);
+refreshArtifactsButton?.addEventListener("click", () => loadProjectArtifacts(true));
 backToProject.addEventListener("click", () => {
   const returnUrl = getBackToProjectUrl();
 
@@ -502,6 +507,7 @@ function openModal(type) {
   setExportActionsEnabled(false);
   modalBackdrop.hidden = false;
   document.body.style.overflow = "hidden";
+  loadProjectArtifacts();
   sourceCode.focus();
 }
 
@@ -601,7 +607,93 @@ function buildAiGatewayPayload(type) {
     titulo: diagramTitle.value || getAiDiagramType(type),
     codigo_fonte: sourceCode.value || "",
     projeto_id: currentProjectContext.project_id,
+    artifact_ids: getSelectedArtifactIds(),
   };
+}
+
+async function loadProjectArtifacts(force = false) {
+  if (!artifactList || !artifactStatus) {
+    return;
+  }
+
+  if (projectArtifacts.length > 0 && !force) {
+    renderArtifactOptions();
+    return;
+  }
+
+  const currentProjectContext = getProjectContext();
+
+  if (!currentProjectContext.project_id || currentProjectContext.project_id.startsWith("demo-")) {
+    artifactStatus.textContent = "Entre por um projeto para carregar arquivos.";
+    artifactList.innerHTML = "";
+    return;
+  }
+
+  artifactStatus.textContent = "Carregando arquivos do Modulo 2...";
+  artifactList.innerHTML = "";
+
+  try {
+    const gatewayUrl = defaultGatewayUrl.replace(/\/$/, "");
+    const response = await fetch(
+      `${gatewayUrl}/api/modulo5/diagramas/projetos/${currentProjectContext.project_id}/artefatos`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Gateway respondeu HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    projectArtifacts = Array.isArray(data.artifacts) ? data.artifacts : [];
+    renderArtifactOptions();
+  } catch (error) {
+    artifactStatus.textContent = "Nao foi possivel carregar arquivos do Modulo 2.";
+    artifactList.innerHTML = "";
+  }
+}
+
+function renderArtifactOptions() {
+  if (!artifactList || !artifactStatus) {
+    return;
+  }
+
+  if (!projectArtifacts.length) {
+    artifactStatus.textContent = "Nenhum arquivo encontrado. A IA usara o codigo colado.";
+    artifactList.innerHTML = "";
+    return;
+  }
+
+  artifactStatus.textContent = `${projectArtifacts.length} arquivo(s) disponivel(is). Selecione os dados para a IA.`;
+  artifactList.innerHTML = projectArtifacts
+    .map((artifact) => {
+      const id = escapeHtml(artifact.id ?? "");
+      const name = escapeHtml(artifact.nome_arquivo || `Artefato ${id}`);
+      const type = escapeHtml(artifact.tipo || "Arquivo");
+
+      return `
+        <label class="artifact-option">
+          <input type="checkbox" value="${id}" checked />
+          <span>
+            ${name}
+            <small>${type}</small>
+          </span>
+        </label>
+      `;
+    })
+    .join("");
+}
+
+function getSelectedArtifactIds() {
+  if (!artifactList) {
+    return [];
+  }
+
+  return Array.from(artifactList.querySelectorAll('input[type="checkbox"]:checked'))
+    .map((input) => Number(input.value))
+    .filter((value) => Number.isFinite(value));
 }
 
 async function requestGatewayDiagram(gatewayUrl, endpoint, payload) {

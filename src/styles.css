@@ -835,6 +835,75 @@ button {
   font-family: Consolas, "Courier New", monospace;
 }
 
+.artifact-picker {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 14px;
+}
+
+.artifact-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.artifact-picker-header div {
+  display: grid;
+  gap: 3px;
+}
+
+.artifact-picker-header strong {
+  color: #111827;
+}
+
+.artifact-picker-header span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.artifact-list {
+  display: grid;
+  gap: 8px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.artifact-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 9px 10px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.artifact-option input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.artifact-option small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.secondary-button.compact {
+  min-width: 86px;
+  height: 36px;
+  padding: 0 12px;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
