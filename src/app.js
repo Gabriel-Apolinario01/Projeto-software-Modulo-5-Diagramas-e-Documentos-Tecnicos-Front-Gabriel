@@ -9,6 +9,7 @@ const sourceCode = document.querySelector("#sourceCode");
 const sourceModeInputs = document.querySelectorAll('input[name="source-mode"]');
 const projectArtifactsPanel = document.querySelector("#projectArtifactsPanel");
 const artifactStatus = document.querySelector("#artifactStatus");
+const artifactSearchInput = document.querySelector("#artifactSearchInput");
 const artifactList = document.querySelector("#artifactList");
 const refreshArtifactsButton = document.querySelector("#refreshArtifactsButton");
 const saveToUploadModuleInput = document.querySelector("#saveToUploadModule");
@@ -322,7 +323,8 @@ const projectContext = getProjectContext();
 const projectId = projectContext.project_id;
 const companyId = projectContext.company_id;
 const projectName = projectContext.project_name;
-backProjectLabel.textContent = "Voltar";
+backProjectLabel.textContent =
+  projectName && projectName !== "Projeto DoculA" ? `Voltar para projeto: ${projectName}` : "Voltar para projeto";
 configureModuleOneNavigation();
 configureLogoutLink();
 renderUserContext();
@@ -402,6 +404,7 @@ let selectedDiagramType = "class";
 let currentPlantuml = "";
 let currentDiagramTitle = "diagrama";
 let projectArtifacts = [];
+let selectedArtifactIds = new Set();
 
 const demoDiagrams = [
   {
@@ -442,6 +445,12 @@ sourceModeInputs.forEach((input) => {
   input.addEventListener("change", updateSourceModeUI);
 });
 refreshArtifactsButton?.addEventListener("click", () => loadProjectArtifacts(true));
+artifactSearchInput?.addEventListener("input", renderArtifactOptions);
+artifactList?.addEventListener("change", (event) => {
+  if (event.target.matches('input[type="checkbox"]')) {
+    syncSelectedArtifactIds();
+  }
+});
 backToProject.addEventListener("click", () => {
   const returnUrl = getBackToProjectUrl();
 
@@ -529,7 +538,11 @@ function openModal(type) {
   currentPlantuml = "";
   currentDiagramTitle = config.title;
   projectArtifacts = [];
+  selectedArtifactIds = new Set();
   artifactList.innerHTML = "";
+  if (artifactSearchInput) {
+    artifactSearchInput.value = "";
+  }
   artifactStatus.textContent = "Clique em carregar arquivos para buscar dados do Modulo 2.";
   const manualSourceInput = document.querySelector('input[name="source-mode"][value="manual"]');
   if (manualSourceInput) {
@@ -703,15 +716,30 @@ function renderArtifactOptions() {
   }
 
   artifactStatus.textContent = `${projectArtifacts.length} arquivo(s) disponivel(is). Selecione os dados para a IA.`;
-  artifactList.innerHTML = projectArtifacts
+
+  const searchTerm = (artifactSearchInput?.value || "").trim().toLowerCase();
+  const filteredArtifacts = projectArtifacts.filter((artifact) => {
+    const name = String(artifact.nome_arquivo || "").toLowerCase();
+    const type = String(artifact.tipo || "").toLowerCase();
+    return !searchTerm || name.includes(searchTerm) || type.includes(searchTerm);
+  });
+
+  if (!filteredArtifacts.length) {
+    artifactList.innerHTML = '<p class="artifact-empty">Nenhum arquivo encontrado para essa busca.</p>';
+    return;
+  }
+
+  artifactList.innerHTML = filteredArtifacts
     .map((artifact) => {
-      const id = escapeHtml(artifact.id ?? "");
+      const rawId = String(artifact.id ?? "");
+      const id = escapeHtml(rawId);
       const name = escapeHtml(artifact.nome_arquivo || `Artefato ${id}`);
       const type = escapeHtml(artifact.tipo || "Arquivo");
+      const checked = selectedArtifactIds.has(rawId) ? "checked" : "";
 
       return `
         <label class="artifact-option">
-          <input type="checkbox" value="${id}" />
+          <input type="checkbox" value="${id}" ${checked} />
           <span>
             ${name}
             <small>${type}</small>
@@ -727,9 +755,25 @@ function getSelectedArtifactIds() {
     return [];
   }
 
-  return Array.from(artifactList.querySelectorAll('input[type="checkbox"]:checked'))
-    .map((input) => Number(input.value))
+  syncSelectedArtifactIds();
+
+  return Array.from(selectedArtifactIds)
+    .map((value) => Number(value))
     .filter((value) => Number.isFinite(value));
+}
+
+function syncSelectedArtifactIds() {
+  if (!artifactList) {
+    return;
+  }
+
+  Array.from(artifactList.querySelectorAll('input[type="checkbox"]')).forEach((input) => {
+    if (input.checked) {
+      selectedArtifactIds.add(input.value);
+    } else {
+      selectedArtifactIds.delete(input.value);
+    }
+  });
 }
 
 async function requestGatewayDiagram(gatewayUrl, endpoint, payload) {
